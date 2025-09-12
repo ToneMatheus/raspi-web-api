@@ -142,6 +142,9 @@ app.MapGet("/debug/db", async (RaspidbContext db) =>
 
 app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
 {
+    if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+        return Results.BadRequest(new { message = "Username and password are required" });
+
     var user = await users.FindByUsernameAsync(dto.Username);
     if (user is null) return Results.Unauthorized();
 
