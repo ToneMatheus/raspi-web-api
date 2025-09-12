@@ -45,7 +45,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
                       ?? Environment.GetEnvironmentVariable("DATABASE_URL");
 
 builder.Services.AddDbContext<RaspidbContext>(options =>
-    options.UseNpgsql(connectionString));
+   options
+       .UseNpgsql(connectionString)
+       .EnableSensitiveDataLogging()   // DEV ONLY  
+       .EnableDetailedErrors());       // DEV ONLY  
+    .
 
 // check env var
 Console.WriteLine("Using connection string from DATABASE_URL? " + (Environment.GetEnvironmentVariable("DATABASE_URL") != null));
@@ -128,13 +132,13 @@ app.MapStaticAssets();
     .WithStaticAssets();*/
 app.MapControllers();
 
-// quick health/debug (optional; remove later)
+/* quick health/debug (optional; remove later)
 app.MapGet("/healthz", () => Results.Ok(new { ok = true }));
 app.MapGet("/debug/db", async (RaspidbContext db) =>
 {
     try { await db.Database.OpenConnectionAsync(); await db.Database.CloseConnectionAsync(); return Results.Ok(new { db = "ok" }); }
     catch (Exception ex) { return Results.Problem(ex.ToString()); }
-});
+});*/
 
 app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
 {
