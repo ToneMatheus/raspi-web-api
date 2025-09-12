@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 
-var key = builder.Configuration["Jwt:Key"] ?? "devTony";
+var key = builder.Configuration["Jwt:Key"] ?? "p7mT4cWQd8rJ2nV0yL1aK9xZ3sH6uB5qR0eN8vY2tU4iO7wP3cM6dA1fG2hJ9k";
 var issuer = builder.Configuration["Jwt:Issuer"] ?? "propro";
 
 // Replace the obsolete method call with the recommended method
