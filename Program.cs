@@ -149,16 +149,39 @@ app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
         return Results.BadRequest(new { message = "Username and password are required " + dto.Username + " " + dto.Password });
 
     var user = await users.FindByUsernameAsync(dto.Username);
-    if (user is null) return Results.Unauthorized();
+    if (user is null)
+    {
+        Console.WriteLine($"LOGIN FAIL: user '{dto.Username}' not found");
+        // Return same message to avoid user enumeration, but log internally
+        return Results.Unauthorized();
+    }
 
-    // Verify against bcrypt hash stored in user.Passwd
-    var ok = BCrypt.Net.BCrypt.Verify(dto.Password, user.Passwd);
+    var hash = user.Passwd?.Trim();
+    var ok = false;
+
+    if (!string.IsNullOrWhiteSpace(hash))
+    {
+        try
+        {
+            // Try both standard and enhanced (in case the hash was created with EnhancedHashPassword)
+            ok = BCrypt.Net.BCrypt.Verify(dto.Password, hash)
+                 || BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, hash);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"BCrypt exception: {ex.Message}");
+        }
+    }
+
+    Console.WriteLine($"LOGIN CHECK: user={user.Username}, hashLen={hash?.Length}, ok={ok}");
+
     if (!ok) return Results.Unauthorized();
 
     // Claims: use Username since you don’t have Email
     var claims = new[]
     {
         new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
         new Claim(ClaimTypes.Name, user.Username)
     };
 
