@@ -12,6 +12,8 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<IUserRepo, UserRepo>();
+
 var key = builder.Configuration["Jwt:Key"] ?? "devTony";
 var issuer = builder.Configuration["Jwt:Issuer"] ?? "propro";
 
@@ -69,6 +71,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 
 
+
 /* db connection
 builder.Services.AddDbContext<RaspidbContext>(options =>
     options.UseMySql(
@@ -114,7 +117,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors(CorsPolicy);
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
@@ -135,21 +138,18 @@ app.MapGet("/debug/db", async (RaspidbContext db) =>
 
 app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
 {
-    // 1) Lookup user by email/username
-    var user = await users.FindByEmailAsync(dto.Email);
+    var user = await users.FindByUsernameAsync(dto.Username);
     if (user is null) return Results.Unauthorized();
 
-    // 2) Verify submitted password against stored bcrypt hash
-    // user.PasswordHash is something like "$2b$10$Kp...k1"
-    var ok = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+    // Verify against bcrypt hash stored in user.Passwd
+    var ok = BCrypt.Net.BCrypt.Verify(dto.Password, user.Passwd);
     if (!ok) return Results.Unauthorized();
 
-    // 3) Issue JWT (or set cookie)
+    // Claims: use Username since you don’t have Email
     var claims = new[]
     {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-        new Claim(JwtRegisteredClaimNames.Email, user.Email),
-        new Claim(ClaimTypes.Name, user.Email)
+        new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+        new Claim(ClaimTypes.Name, user.Username)
     };
 
     var creds = new SigningCredentials(
