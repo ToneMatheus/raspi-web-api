@@ -14,8 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 
-var key = builder.Configuration["Jwt:Key"] ?? "p7mT4cWQd8rJ2nV0yL1aK9xZ3sH6uB5qR0eN8vY2tU4iO7wP3cM6dA1fG2hJ9k";
-var issuer = builder.Configuration["Jwt:Issuer"] ?? "propro";
+var key = builder.Configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
+var issuer = builder.Configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER");
 
 // Replace the obsolete method call with the recommended method
 // Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("Pl0pkoek"));
@@ -50,12 +50,12 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<RaspidbContext>(options =>
    options
-       .UseNpgsql(connectionString)
-       .EnableSensitiveDataLogging()   // DEV ONLY  
-       .EnableDetailedErrors());       // DEV ONLY  
+       .UseNpgsql(connectionString));
+       /*.EnableSensitiveDataLogging()   // DEV ONLY  
+       .EnableDetailedErrors());       // DEV ONLY  */
 
 // check env var
-Console.WriteLine("Using connection string from DATABASE_URL? " + (Environment.GetEnvironmentVariable("DATABASE_URL") != null));
+// Console.WriteLine("Using connection string from DATABASE_URL? " + (Environment.GetEnvironmentVariable("DATABASE_URL") != null));
 
 // CORS — allow your frontend(s)
 const string CorsPolicy = "Frontend";
@@ -146,12 +146,12 @@ app.MapGet("/debug/db", async (RaspidbContext db) =>
 app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
 {
     if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
-        return Results.BadRequest(new { message = "Username and password are required " + dto.Username + " " + dto.Password });
+        return Results.BadRequest(new { message = "Username and password are required "});
 
     var user = await users.FindByUsernameAsync(dto.Username);
     if (user is null)
     {
-        Console.WriteLine($"LOGIN FAIL: user '{dto.Username}' not found");
+        // Console.WriteLine($"LOGIN FAIL: user '{dto.Username}' not found");
         // Return same message to avoid user enumeration, but log internally
         return Results.Unauthorized();
     }
@@ -173,7 +173,7 @@ app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
         }
     }
 
-    Console.WriteLine($"LOGIN CHECK: user={user.Username}, hashLen={hash?.Length}, ok={ok}");
+    // Console.WriteLine($"LOGIN CHECK: user={user.Username}, hashLen={hash?.Length}, ok={ok}");
 
     if (!ok) return Results.Unauthorized();
 
