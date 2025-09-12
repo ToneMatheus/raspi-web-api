@@ -17,6 +17,10 @@ builder.Services.AddScoped<IUserRepo, UserRepo>();
 var key = builder.Configuration["Jwt:Key"] ?? "devTony";
 var issuer = builder.Configuration["Jwt:Issuer"] ?? "propro";
 
+// Replace the obsolete method call with the recommended method
+// Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("Pl0pkoek"));
+// Console.WriteLine(BCrypt.Net.BCrypt.Verify("Pl0pkoek", "$2a$11$jTkyI6teTw7kX0xiLkDSO.l8C53BUca0MF.hXiuWP21PxW8ZATsiO"));
+
 // JWT auth (validate on protected endpoints)
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -148,7 +152,7 @@ app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
     if (user is null) return Results.Unauthorized();
 
     // Verify against bcrypt hash stored in user.Passwd
-    var ok = BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.Passwd);
+    var ok = BCrypt.Net.BCrypt.Verify(dto.Password, user.Passwd);
     if (!ok) return Results.Unauthorized();
 
     // Claims: use Username since you don’t have Email
