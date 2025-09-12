@@ -3,8 +3,34 @@ using api_raspi_web.Contexts;
 using System;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using api_raspi_web.Auth;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var key = builder.Configuration["Jwt:Key"] ?? "devTony";
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "propro";
+
+// JWT auth (validate on protected endpoints)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o =>
+    {
+        o.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = false,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 /* Add services to the container.
 builder.Services.AddControllersWithViews();*/
@@ -99,12 +125,45 @@ app.MapStaticAssets();
     .WithStaticAssets();*/
 app.MapControllers();
 
-// quick health/debug (optional; remove later)
+/* quick health/debug (optional; remove later)
 app.MapGet("/healthz", () => Results.Ok(new { ok = true }));
 app.MapGet("/debug/db", async (RaspidbContext db) =>
 {
     try { await db.Database.OpenConnectionAsync(); await db.Database.CloseConnectionAsync(); return Results.Ok(new { db = "ok" }); }
     catch (Exception ex) { return Results.Problem(ex.ToString()); }
+});*/
+
+app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
+{
+    // 1) Lookup user by email/username
+    var user = await users.FindByEmailAsync(dto.Email);
+    if (user is null) return Results.Unauthorized();
+
+    // 2) Verify submitted password against stored bcrypt hash
+    // user.PasswordHash is something like "$2b$10$Kp...k1"
+    var ok = BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash);
+    if (!ok) return Results.Unauthorized();
+
+    // 3) Issue JWT (or set cookie)
+    var claims = new[]
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, user.Email),
+        new Claim(ClaimTypes.Name, user.Email)
+    };
+
+    var creds = new SigningCredentials(
+        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+        SecurityAlgorithms.HmacSha256);
+
+    var token = new JwtSecurityToken(issuer, null, claims,
+        expires: DateTime.UtcNow.AddHours(12), signingCredentials: creds);
+
+    var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+    return Results.Ok(new { token = jwt });
 });
+
+app.MapGet("/api/me", () => Results.Ok("You are authenticated"))
+   .RequireAuthorization();
 
 app.Run();
