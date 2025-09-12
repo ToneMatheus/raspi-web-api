@@ -128,13 +128,13 @@ app.MapStaticAssets();
     .WithStaticAssets();*/
 app.MapControllers();
 
-/* quick health/debug (optional; remove later)
+// quick health/debug (optional; remove later)
 app.MapGet("/healthz", () => Results.Ok(new { ok = true }));
 app.MapGet("/debug/db", async (RaspidbContext db) =>
 {
     try { await db.Database.OpenConnectionAsync(); await db.Database.CloseConnectionAsync(); return Results.Ok(new { db = "ok" }); }
     catch (Exception ex) { return Results.Problem(ex.ToString()); }
-});*/
+});
 
 app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
 {
