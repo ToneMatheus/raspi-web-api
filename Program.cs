@@ -148,7 +148,7 @@ app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
     if (user is null) return Results.Unauthorized();
 
     // Verify against bcrypt hash stored in user.Passwd
-    var ok = BCrypt.Net.BCrypt.Verify(dto.Password, user.Passwd);
+    var ok = BCrypt.Net.BCrypt.EnhancedVerify(dto.Password, user.Passwd);
     if (!ok) return Results.Unauthorized();
 
     // Claims: use Username since you don’t have Email
