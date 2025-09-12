@@ -49,7 +49,6 @@ builder.Services.AddDbContext<RaspidbContext>(options =>
        .UseNpgsql(connectionString)
        .EnableSensitiveDataLogging()   // DEV ONLY  
        .EnableDetailedErrors());       // DEV ONLY  
-    .
 
 // check env var
 Console.WriteLine("Using connection string from DATABASE_URL? " + (Environment.GetEnvironmentVariable("DATABASE_URL") != null));
