@@ -196,7 +196,13 @@ app.MapPost("/api/login", async (LoginDto dto, IUserRepo users) =>
     return Results.Ok(new { token = jwt });
 });
 
-app.MapGet("/api/me", () => Results.Ok("You are authenticated"))
-   .RequireAuthorization();
+app.MapGet("/api/me", (ClaimsPrincipal user) =>
+{
+    var id = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    var username = user.Identity?.Name;
+
+    return Results.Ok(new { userId = id, username });
+})
+.RequireAuthorization();
 
 app.Run();
