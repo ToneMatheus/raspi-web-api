@@ -16,13 +16,14 @@ namespace api_raspi_web.Controllers
         }
 
         [HttpGet("canbalanceuser/{userId}")]
-        public async Task<ActionResult<CanBalanceUser>> GetBalancesUser(int userId)
+        public async Task<ActionResult<IEnumerable<CanBalanceUser>>> GetBalancesUser(int userId)
         {
-            var canBalanceUser = await _context.CanBalanceUser.FindAsync(userId);
+            var canBalanceUser = await _context.CanBalanceUser.Where(b => b.UserId == userId).ToListAsync();
 
-            if (canBalanceUser is null) return NotFound();
+            if (canBalanceUser == null || !canBalanceUser.Any())
+                return NotFound();
 
-            return canBalanceUser;
+            return Ok(canBalanceUser);
         }
     }
 }
