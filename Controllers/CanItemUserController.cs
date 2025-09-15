@@ -16,16 +16,14 @@ namespace api_raspi_web.Controllers
         }
 
         [HttpGet("canitemuser/all/{userId}")]
-        public ActionResult<IEnumerable<CanItem>> GetAllItems()
+        public ActionResult<IEnumerable<CanItemUser>> GetAllItems(int userId)
         {
-            var canItemUser = _context.CanItem.ToList();
+            var canItemUser = _context.CanItemUser.Where(i => i.UserId == userId).ToList();
 
-            if (!canItemUser.Any())
-            {
-                return NotFound("No items found.");
-            }
+            if (canItemUser == null || !canItemUser.Any())
+                return NotFound();
 
-            return canItemUser;
+            return Ok(canItemUser);
         }
 
         [HttpGet("canitemuser/{id:int}/{userId:int}")]
