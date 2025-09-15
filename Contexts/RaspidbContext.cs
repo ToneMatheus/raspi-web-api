@@ -13,6 +13,8 @@ namespace api_raspi_web.Contexts
         public DbSet<CanBalance> CanBalance { get; set; }
         public DbSet<CanItem> CanItem { get; set; }
         public DbSet<User> User { get; set; }
+        public DbSet<CanBalanceUser> CanBalanceUser { get; set; }
+        public DbSet<CanItemUser> CanItemUser { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Balance>(entity =>
