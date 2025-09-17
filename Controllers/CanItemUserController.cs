@@ -69,8 +69,8 @@ namespace api_raspi_web.Controllers
             // Create and add the new balance
             var newBalance = new CanBalanceUser
             {
-                UserId = userId,
-                Total = newTotal
+                Total = newTotal,
+                UserId = userId
             };
             _context.CanBalanceUser.Add(newBalance);
 
@@ -78,7 +78,7 @@ namespace api_raspi_web.Controllers
 
             return CreatedAtAction(
                 nameof(GetItemById),
-                new { id = canItemUser.CanItemUserId, UserId = userId },
+                new { id = canItemUser.CanItemUserId },
                 canItemUser);
         }
 
