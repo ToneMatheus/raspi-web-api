@@ -78,7 +78,7 @@ namespace api_raspi_web.Controllers
 
             return CreatedAtAction(
                 nameof(GetItemById),
-                new { id = canItemUser.CanItemUserId },
+                new { id = canItemUser.CanItemUserId, userid = canItemUser.CanItemUserId },
                 canItemUser);
         }
 
