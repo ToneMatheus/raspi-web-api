@@ -41,7 +41,7 @@ namespace api_raspi_web.Controllers
 
 
         [HttpPost("canitemuser/create/{userId}")]
-        public async Task<ActionResult<CanItemUser>> CreateSaleEmpty(CanItemUser canItemUser, int userId)
+        public async Task<ActionResult<CanItemUser>> CreateItemUserEmpty(CanItemUser canItemUser, int userId)
         {
             if (canItemUser is null)
                 return BadRequest("Invalid item data.");
@@ -78,7 +78,7 @@ namespace api_raspi_web.Controllers
 
             return CreatedAtAction(
                 nameof(GetItemById),
-                new { id = canItemUser.CanItemUserId, userId = userId },
+                new { id = canItemUser.CanItemUserId, UserId = userId },
                 canItemUser);
         }
 
