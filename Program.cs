@@ -65,7 +65,7 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins(
-                "http://tonymatheusworks.com/", // prod
+                "http://tonymatheusworks.com", // prod
                 "http://localhost:5173",                   // Vite dev (adjust if needed)
                 "http://localhost:3000"                    // optional: CRA dev
             )
