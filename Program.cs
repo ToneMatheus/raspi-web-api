@@ -46,13 +46,11 @@ builder.Services.AddControllers();
 
 // Get the Neon connection string from env
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                      ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+                      ?? Environment.GetEnvironmentVariable("DATABASE_URL")
+                      ?? throw new InvalidOperationException("No MySQL connection string found");
 
 builder.Services.AddDbContext<RaspidbContext>(options =>
-   options
-       .UseNpgsql(connectionString));
-       /*.EnableSensitiveDataLogging()   // DEV ONLY  
-       .EnableDetailedErrors());       // DEV ONLY  */
+ options.UseMySql(connectionString, new MySqlServerVersion(new Version(10, 5))));
 
 // check env var
 // Console.WriteLine("Using connection string from DATABASE_URL? " + (Environment.GetEnvironmentVariable("DATABASE_URL") != null));
