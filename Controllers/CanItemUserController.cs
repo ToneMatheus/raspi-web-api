@@ -41,41 +41,46 @@ namespace api_raspi_web.Controllers
 
 
         [HttpPost("canitemuser/create")]
-        public async Task<ActionResult<CanItemUser>> CreateCanItemUserEmpty(CanItemUser canItemUser)
+        public async Task<ActionResult<CanItemUser>> CreateCanItemUserEmpty(CanItemUser dto)
         {
-            if (canItemUser is null)
-                return BadRequest("Invalid item data.");
-            if (canItemUser.UserId <= 0)
-                return BadRequest("UserId is required.");
-            var userExists = await _context.User.AnyAsync(u => u.UserId == canItemUser.UserId);
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            if (dto.UserId <= 0)
+                return BadRequest(new { UserId = new[] { "UserId is required." } });
+
+            var userExists = await _context.User.AnyAsync(u => u.UserId == dto.UserId);
             if (!userExists)
-                return BadRequest($"User {canItemUser.UserId} does not exist.");
+                return BadRequest(new { UserId = new[] { $"User {dto.UserId} does not exist." } });
 
-            // Add the item
-            _context.CanItemUser.Add(canItemUser);
+            // Map DTO -> Entity
+            var entity = new CanItemUser
+            {
+                Price = dto.Price,
+                // If your entity uses DateTime, choose how to store:
+                //   - Store UTC: dto.Date.UtcDateTime
+                //   - Store local: dto.Date.LocalDateTime
+                //   - Store as DateTimeOffset (preferred) if your entity allows it
+                Date = dto.Date,   // store in UTC
+                Description = dto.Description,
+                UserId = dto.UserId
+            };
 
-            // Get the latest balance   
+            _context.CanItemUser.Add(entity);
+
+            // Get the latest balance
             var latestBalance = await _context.CanBalanceUser
-            .Where(b => b.UserId == canItemUser.UserId)
-            .OrderByDescending(b => b.CanBalanceUserId)
-            .FirstOrDefaultAsync();
+                .Where(b => b.UserId == dto.UserId)
+                .OrderByDescending(b => b.CanBalanceUserId)
+                .FirstOrDefaultAsync();
 
-            decimal newTotal;
-            if (latestBalance != null)
-            {
-                newTotal = latestBalance.Total - canItemUser.Price;
-            }
-            else
-            {
-                // If no balance exists yet, maybe treat initial balance as 0
-                newTotal = -canItemUser.Price;
-            }
+            var newTotal = (latestBalance?.Total ?? 0m) - dto.Price;
 
             // Create and add the new balance
             var newBalance = new CanBalanceUser
             {
                 Total = newTotal,
-                UserId = canItemUser.UserId
+                UserId = dto.UserId
             };
             _context.CanBalanceUser.Add(newBalance);
 
@@ -83,8 +88,9 @@ namespace api_raspi_web.Controllers
 
             return CreatedAtAction(
                 nameof(GetItemById),
-                new { id = canItemUser.CanItemUserId },
-                canItemUser);
+                new { id = entity.CanItemUserId },
+                entity
+            );
         }
 
         [HttpDelete("canitemuser/del/{id}/{userId}")]
