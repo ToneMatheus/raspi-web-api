@@ -41,7 +41,7 @@ namespace api_raspi_web.Controllers
 
 
         [HttpPost("canitemuser/create")]
-        public async Task<ActionResult<Item>> CreateCanItemUserEmpty(CanItemUser i)
+        public async Task<ActionResult<CanItemUser>> CreateCanItemUserEmpty(CanItemUser i)
         {
             if (i is null)
                 return BadRequest("Invalid item data.");
