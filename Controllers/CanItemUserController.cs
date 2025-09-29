@@ -45,14 +45,20 @@ namespace api_raspi_web.Controllers
         {
             if (canItemUser is null)
                 return BadRequest("Invalid item data.");
+            if (canItemUser.UserId <= 0)
+                return BadRequest("UserId is required.");
+            var userExists = await _context.User.AnyAsync(u => u.UserId == canItemUser.UserId);
+            if (!userExists)
+                return BadRequest($"User {canItemUser.UserId} does not exist.");
 
             // Add the item
             _context.CanItemUser.Add(canItemUser);
 
-            // Get the latest balance
+            // Get the latest balance   
             var latestBalance = await _context.CanBalanceUser
-                .OrderByDescending(b => b.CanBalanceUserId)
-                .FirstOrDefaultAsync();
+            .Where(b => b.UserId == canItemUser.UserId)
+            .OrderByDescending(b => b.CanBalanceUserId)
+            .FirstOrDefaultAsync();
 
             decimal newTotal;
             if (latestBalance != null)
