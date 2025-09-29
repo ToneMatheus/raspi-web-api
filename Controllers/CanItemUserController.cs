@@ -54,10 +54,6 @@ namespace api_raspi_web.Controllers
             var entity = new CanItemUser
             {
                 Price = dto.Price,
-                // If your entity uses DateTime, choose how to store:
-                //   - Store UTC: dto.Date.UtcDateTime
-                //   - Store local: dto.Date.LocalDateTime
-                //   - Store as DateTimeOffset (preferred) if your entity allows it
                 Date = dto.Date,   // store in UTC
                 Description = dto.Description,
                 UserId = dto.UserId
@@ -95,7 +91,7 @@ namespace api_raspi_web.Controllers
 
             return CreatedAtAction(
                 nameof(GetItemById),
-                new { id = dto.CanItemUserId },
+                new { id = dto.CanItemUserId, userId = dto.UserId },
                 entity);
         }
 
