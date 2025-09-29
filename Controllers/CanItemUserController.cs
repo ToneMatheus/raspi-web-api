@@ -41,13 +41,13 @@ namespace api_raspi_web.Controllers
 
 
         [HttpPost("canitemuser/create")]
-        public async Task<ActionResult<CanItemUser>> CreateCanItemUserEmpty(CanItemUser i)
+        public async Task<ActionResult<CanItemUser>> CreateCanItemUserEmpty(CanItemUser canItemUser)
         {
-            if (i is null)
+            if (canItemUser is null)
                 return BadRequest("Invalid item data.");
 
             // Add the item
-            _context.CanItemUser.Add(i);
+            _context.CanItemUser.Add(canItemUser);
 
             // Get the latest balance
             var latestBalance = await _context.CanBalanceUser
@@ -57,18 +57,19 @@ namespace api_raspi_web.Controllers
             decimal newTotal;
             if (latestBalance != null)
             {
-                newTotal = latestBalance.Total - i.Price;
+                newTotal = latestBalance.Total - canItemUser.Price;
             }
             else
             {
                 // If no balance exists yet, maybe treat initial balance as 0
-                newTotal = -i.Price;
+                newTotal = -canItemUser.Price;
             }
 
             // Create and add the new balance
             var newBalance = new CanBalanceUser
             {
-                Total = newTotal
+                Total = newTotal,
+                UserId = canItemUser.UserId
             };
             _context.CanBalanceUser.Add(newBalance);
 
@@ -76,8 +77,8 @@ namespace api_raspi_web.Controllers
 
             return CreatedAtAction(
                 nameof(GetItemById),
-                new { id = i.CanItemUserId },
-                i);
+                new { id = canItemUser.CanItemUserId },
+                canItemUser);
         }
 
         [HttpDelete("canitemuser/del/{id}/{userId}")]
