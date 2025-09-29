@@ -15,6 +15,7 @@ namespace api_raspi_web.Contexts
         public DbSet<User> User { get; set; }
         public DbSet<CanBalanceUser> CanBalanceUser { get; set; }
         public DbSet<CanItemUser> CanItemUser { get; set; }
+        public DbSet<CanTransactionUser> CanTransactionUser { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Balance>(entity =>
@@ -108,6 +109,30 @@ namespace api_raspi_web.Contexts
                     }
                     
                 );
+
+            });
+
+            modelBuilder.Entity<CanTransactionUser>(entity =>
+            {
+                entity.HasKey(e => e.CanTransactionUserId);
+                entity.HasOne(t => t.CanItemUser)
+                      .WithMany()
+                      .HasForeignKey(t => t.CanItemUserId);
+
+                entity.HasOne(t => t.CanBalanceUser)
+                      .WithMany()
+                      .HasForeignKey(t => t.CanBalanceUserId);
+
+                /*entity.HasData(
+                    new CanTransaction
+                    {
+                        CanTransactionId = 1,
+                        CanItemId = 1,
+                        CanBalanceId = 2,  // after item 1 was applied
+                        TransactionDate = new DateTime(2025, 05, 17, 0, 0, 0, DateTimeKind.Utc)
+                    }
+
+                );*/
 
             });
         }

@@ -85,7 +85,16 @@ namespace api_raspi_web.Controllers
                 Total = newTotal,
                 UserId = dto.UserId
             };
+
+            // Create the transaction linking the item + the balance
+            var transaction = new CanTransactionUser
+            {
+                CanItemUser = entity,          // link via navigation
+                CanBalanceUser = newBalance,   // link via navigation
+                TransactionDate = DateTime.UtcNow
+            };
             _context.CanBalanceUser.Add(newBalance);
+            _context.CanTransactionUser.Add(transaction);
 
             await _context.SaveChangesAsync();
 
