@@ -30,16 +30,32 @@ namespace api_raspi_web.Controllers
             if (!userExists)
                 return BadRequest($"User {request.UserId} does not exist.");
 
-            // Keep ONLY the balance with id=1 (must belong to this user)
-            var anchor = await _context.CanBalanceUser
-                .FirstOrDefaultAsync(b => b.UserId == request.UserId && b.CanBalanceUserId == 1);
-
-            if (anchor is null)
-                return BadRequest($"Balance with id=1 does not exist for user {request.UserId}.");
-
             await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                // Pick the user's anchor balance (oldest by PK). 
+                // If you have IsDefault, use that instead:
+                // var anchor = await _context.CanBalanceUser
+                //     .FirstOrDefaultAsync(b => b.UserId == request.UserId && b.IsDefault);
+
+                var anchor = await _context.CanBalanceUser
+                    .Where(b => b.UserId == request.UserId)
+                    .OrderBy(b => b.CanBalanceUserId)
+                    .FirstOrDefaultAsync();
+
+                // Create an anchor if none exists
+                if (anchor is null)
+                {
+                    anchor = new CanBalanceUser
+                    {
+                        UserId = request.UserId,
+                        Total = request.NewBalance
+                        // IsDefault = true
+                    };
+                    _context.CanBalanceUser.Add(anchor);
+                    await _context.SaveChangesAsync(); // ensure anchor has an ID for FKs
+                }
+
                 // Collect ids for FK-safe deletes
                 var itemIds = await _context.CanItemUser
                     .Where(i => i.UserId == request.UserId)
@@ -47,11 +63,11 @@ namespace api_raspi_web.Controllers
                     .ToListAsync();
 
                 var balanceIdsToDelete = await _context.CanBalanceUser
-                    .Where(b => b.UserId == request.UserId && b.CanBalanceUserId != 1)
+                    .Where(b => b.UserId == request.UserId && b.CanBalanceUserId != anchor.CanBalanceUserId)
                     .Select(b => b.CanBalanceUserId)
                     .ToListAsync();
 
-                // 1) Delete transactions referencing those items or balances
+                // 1) Delete transactions referencing those items or balances (but not the anchor)
                 await _context.CanTransactionUser
                     .Where(t =>
                         (t.CanItemUserId != null && itemIds.Contains(t.CanItemUserId)) ||
@@ -63,19 +79,24 @@ namespace api_raspi_web.Controllers
                     .Where(i => i.UserId == request.UserId)
                     .ExecuteDeleteAsync();
 
-                // 3) Delete all user's balances except id=1
-                await _context.CanBalanceUser
-                    .Where(b => b.UserId == request.UserId && b.CanBalanceUserId != 1)
-                    .ExecuteDeleteAsync();
+                // 3) Delete all user's balances except the anchor
+                if (balanceIdsToDelete.Count > 0)
+                {
+                    await _context.CanBalanceUser
+                        .Where(b => balanceIdsToDelete.Contains(b.CanBalanceUserId))
+                        .ExecuteDeleteAsync();
+                }
 
                 // 4) Update anchor balance
                 anchor.Total = request.NewBalance;
                 _context.CanBalanceUser.Update(anchor);
 
-                // Optional: log a "reset" transaction
+                // Optional: log a reset transaction tied to the anchor
                 // _context.CanTransactionUser.Add(new CanTransactionUser {
                 //     CanBalanceUserId = anchor.CanBalanceUserId,
-                //     TransactionDate = DateTime.UtcNow
+                //     TransactionDate = DateTime.UtcNow,
+                //     Amount = request.NewBalance, // if you record it
+                //     Note = "Reset"
                 // });
 
                 await _context.SaveChangesAsync();
@@ -88,6 +109,7 @@ namespace api_raspi_web.Controllers
                 return Problem($"Reset failed: {ex.Message}");
             }
         }
+
 
 
         [HttpGet("canbalanceuser/{userId}")]
